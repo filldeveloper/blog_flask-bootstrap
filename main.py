@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from post import Post
 from datetime import datetime
 import requests
+import json
 import smtplib
 import os
 
@@ -23,7 +24,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template('index.html', posts=post_objects, date=date, email=OWN_EMAIL)
+    return render_template('index.html', posts=post_objects, date=date)
 
 
 @app.route('/post/<int:index>')
@@ -50,11 +51,38 @@ def contact():
 
 
 def send_email(name, email, phone, message):
-    email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
-    with smtplib.SMTP("smtp.gmail.com") as connection:
-        connection.starttls()
-        connection.login(OWN_EMAIL, OWN_PASSWORD)
-        connection.sendmail(OWN_EMAIL, OWN_EMAIL, email_message)
+    url = "https://be.trustifi.com/api/i/v1/email"
+
+    payload = json.dumps({
+    "recipients": [
+        {
+        "email": email,
+        "name": name,
+        "phone": {
+            "country_code": "+55",
+            "phone_number": phone
+        }
+        }
+    ],
+    "lists": [],
+    "contacts": [],
+    "attachments": [],
+    "title": "Email enviado pelo blog",
+    "html": message,
+    "methods": {
+        "postmark": False,
+        "secureSend": False,
+        "encryptContent": False,
+        "secureReply": False
+    }
+    })
+    headers = {
+    'x-trustifi-key': os.environ.get('TRUSTIFI_KEY'),
+    'x-trustifi-secret': os.environ.get('TRUSTIFI_SECRET'),
+    'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
 
 if __name__ == '__main__':
     app.run(debug=True)
