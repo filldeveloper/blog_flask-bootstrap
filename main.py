@@ -1,7 +1,9 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from post import Post
 from datetime import datetime
 import requests
+import smtplib
+import os
 
 posts = requests.get('https://api.npoint.io/5deaf41b4f8078c817e6').json()
 post_objects = []
@@ -12,6 +14,11 @@ for post in posts:
     post_objects.append(post_obs)
 
 date = datetime.now().year
+
+OWN_EMAIL = os.environ.get('OWN_EMAIL')
+OWN_PASSWORD = os.environ.get('OWN_PASSWORD')
+
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -32,9 +39,22 @@ def show_post(index):
 def about():
     return render_template('about.html', date=date)
 
-@app.route('/contact')
+@app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    return render_template('contact.html', date=date)
+    if request.method == 'GET':
+        return render_template('contact.html', date=date, msg_sent=False)
+    else:
+        data = request.form
+        send_email(data["name"], data["email"], data["phonumber"], data["message"])
+        return render_template('contact.html', date=date, msg_sent=True)
+
+
+def send_email(name, email, phone, message):
+    email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
+    with smtplib.SMTP("smtp.gmail.com") as connection:
+        connection.starttls()
+        connection.login(OWN_EMAIL, OWN_PASSWORD)
+        connection.sendmail(OWN_EMAIL, OWN_EMAIL, email_message)
 
 if __name__ == '__main__':
     app.run(debug=True)
