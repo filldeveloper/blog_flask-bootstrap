@@ -18,12 +18,12 @@ date = datetime.now().year
 OWN_EMAIL = os.environ.get('OWN_EMAIL')
 OWN_PASSWORD = os.environ.get('OWN_PASSWORD')
 
-
+print(OWN_EMAIL, OWN_PASSWORD)
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template('index.html', posts=post_objects, date=date)
+    return render_template('index.html', posts=post_objects, date=date, email=OWN_EMAIL)
 
 
 @app.route('/post/<int:index>')
